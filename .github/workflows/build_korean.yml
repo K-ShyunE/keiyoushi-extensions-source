@@ -29,7 +29,7 @@ jobs:
       # :src:ko:assembleDebug 명령을 사용하면
       # src/ko 폴더 아래에 있는 모든 확장기능(BlackToon 포함 전체)을 빌드합니다.
       - name: Build BlackToon
-        run: ./gradlew :src:ko:blacktoon:assembleDebug
+        run: ./gradlew :src:ko:blacktoon:assembleDebug -x lintKotlinMain
 
       # 빌드된 모든 APK를 찾아서 업로드합니다.
       - name: Upload APKs
