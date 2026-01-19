@@ -26,7 +26,6 @@ class BlackToon : HttpSource() {
     override val lang = "ko"
 
     private var currentBaseUrlHost = ""
-    
     // override val baseUrl = "https://blacktoon.me"
     override val baseUrl = "https://blacktoon410.com"
 
