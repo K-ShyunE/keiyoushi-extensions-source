@@ -27,10 +27,8 @@ class BlackToon : HttpSource() {
 
     private var currentBaseUrlHost = ""
 
-    // override val baseUrl = "https://blacktoon.me"
     override val baseUrl = "https://blacktoon410.com"
 
-    // private val cdnUrl = "https://blacktoonimg.com/"
     private val cdnUrl = "https://webimg7.com/"
 
     override val supportsLatest = true
@@ -101,3 +99,121 @@ class BlackToon : HttpSource() {
             db.sortedByDescending { it.updatedAt }.getPageChunk(page),
         )
     }
+
+    override fun fetchSearchManga(page: Int, query: String, filters: FilterList): Observable<MangasPage> {
+        var list = db
+
+        if (query.isNotBlank()) {
+            val stdQuery = query.trim()
+            list = list.filter {
+                it.name.contains(stdQuery, true) ||
+                    it.author.contains(stdQuery, true)
+            }
+        }
+
+        filters.filterIsInstance<ListFilter>().forEach {
+            list = it.applyFilter(list)
+        }
+
+        return Observable.just(
+            list.getPageChunk(page),
+        )
+    }
+
+    override fun getFilterList() = getFilters()
+
+    override fun mangaDetailsRequest(manga: SManga): Request {
+        return GET("$baseUrl/webtoon/${manga.url}.html#${manga.status}", headers)
+    }
+
+    override fun getMangaUrl(manga: SManga): String {
+        return buildString {
+            if (currentBaseUrlHost.isBlank()) {
+                append(baseUrl)
+            } else {
+                append("https://")
+                append(currentBaseUrlHost)
+            }
+            append("/webtoon/")
+            append(manga.url)
+            append(".html")
+        }
+    }
+
+    override fun mangaDetailsParse(response: Response): SManga {
+        val doc = response.asJsoup()
+        return SManga.create().apply {
+            description = doc.select("p.mt-2").last()?.text()
+            thumbnail_url = doc.selectFirst("script:containsData(+img_domain+)")?.data()?.let {
+                cdnUrl + it.substringAfter("+'").substringBefore("'+")
+            }
+            status = response.request.url.fragment!!.toInt()
+        }
+    }
+
+    override fun chapterListRequest(manga: SManga): Request {
+        val url = "$baseUrl/data/toonlist/${manga.url}.js?v=${"%.17f".format(Random.nextDouble())}"
+
+        return GET(url, headers)
+    }
+
+    override fun chapterListParse(response: Response): List<SChapter> {
+        val mangaId = response.request.url.pathSegments.last().removeSuffix(".js")
+
+        val data = response.body.string()
+            .substringAfter(" = ")
+            .removeSuffix(";")
+            .let { json.decodeFromString<List<Chapter>>(it) }
+
+        return data.map { it.toSChapter(mangaId) }.reversed()
+    }
+
+    override fun getChapterUrl(chapter: SChapter): String {
+        return buildString {
+            if (currentBaseUrlHost.isBlank()) {
+                append(baseUrl)
+            } else {
+                append("https://")
+                append(currentBaseUrlHost)
+            }
+            append("/webtoons/")
+            append(chapter.url)
+            append(".html")
+        }
+    }
+
+    override fun pageListRequest(chapter: SChapter): Request {
+        return GET("$baseUrl/webtoons/${chapter.url}.html", headers)
+    }
+
+    override fun pageListParse(response: Response): List<Page> {
+        val document = response.asJsoup()
+
+        return document.select("#toon_content_imgs img").map {
+            Page(0, imageUrl = cdnUrl + it.attr("o_src"))
+        }
+    }
+
+    // unused
+    override fun popularMangaRequest(page: Int): Request {
+        throw UnsupportedOperationException()
+    }
+    override fun popularMangaParse(response: Response): MangasPage {
+        throw UnsupportedOperationException()
+    }
+    override fun latestUpdatesRequest(page: Int): Request {
+        throw UnsupportedOperationException()
+    }
+    override fun latestUpdatesParse(response: Response): MangasPage {
+        throw UnsupportedOperationException()
+    }
+    override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
+        throw UnsupportedOperationException()
+    }
+    override fun searchMangaParse(response: Response): MangasPage {
+        throw UnsupportedOperationException()
+    }
+    override fun imageUrlParse(response: Response): String {
+        throw UnsupportedOperationException()
+    }
+}
