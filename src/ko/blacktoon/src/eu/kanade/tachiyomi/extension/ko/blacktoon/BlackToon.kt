@@ -26,9 +26,11 @@ class BlackToon : HttpSource() {
     override val lang = "ko"
 
     private var currentBaseUrlHost = ""
-    override val baseUrl = "https://blacktoon.me"
+    // override val baseUrl = "https://blacktoon.me"
+    override val baseUrl = "https://blacktoon410.com"
 
-    private val cdnUrl = "https://blacktoonimg.com/"
+    // private val cdnUrl = "https://blacktoonimg.com/"
+    private val cdnUrl = "https://webimg7.com/"
 
     override val supportsLatest = true
 
